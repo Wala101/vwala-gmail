@@ -1,39 +1,41 @@
 import { google } from "googleapis";
 
-export async function getGmailClient(accessToken: string) {
+export async function trashEmails(accessToken: string, query: string): Promise<number> {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: accessToken });
-  return google.gmail({ version: "v1", auth });
-}
+  const gmail = google.gmail({ version: "v1", auth });
 
-export async function trashEmails(accessToken: string, query: string): Promise<number> {
-  const gmail = await getGmailClient(accessToken);
-  let nextPageToken: string | undefined = undefined;
-  let totalDeleted = 0;
+  let total = 0;
+  let pageToken: string | undefined = undefined;
 
   do {
     const res: any = await gmail.users.messages.list({
       userId: "me",
-      q: query,
-      pageToken: nextPageToken,
+      q: query + " -in:trash -in:spam",
+      pageToken,
       maxResults: 100,
     });
 
-    const messages = res.data?.messages || [];
+    const messages = res.data.messages || [];
     if (messages.length === 0) break;
 
-    // Apaga mais rápido (mas ainda seguro)
-    await Promise.all(
-      messages.map((msg: any) =>
-        gmail.users.messages.trash({ userId: "me", id: msg.id! })
-      )
-    );
+    // Apaga um por um (mais estável)
+    for (const msg of messages) {
+      try {
+        await gmail.users.messages.trash({
+          userId: "me",
+          id: msg.id!
+        });
+        total++;
+      } catch (e) {
+        console.error("Erro ao apagar mensagem:", msg.id);
+      }
+    }
 
-    totalDeleted += messages.length;
-    nextPageToken = res.data?.nextPageToken || undefined;
+    pageToken = res.data.nextPageToken;
+    await new Promise(r => setTimeout(r, 80)); // delay leve
 
-    await new Promise((r) => setTimeout(r, 150)); // delay reduzido
-  } while (nextPageToken);
+  } while (pageToken);
 
-  return totalDeleted;
+  return total;
 }

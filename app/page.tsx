@@ -19,7 +19,7 @@ export default function Home() {
     setStatusMessage(`Processando ${label}...`);
 
     let attempts = 0;
-    const maxAttempts = 12; // tenta até 12 vezes
+    const maxAttempts = 15; // mais tentativas
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -38,11 +38,11 @@ export default function Home() {
           return; // terminou com sucesso
         }
       } catch (err) {
-        console.log(`Tentativa ${attempts} falhou, tentando novamente...`);
+        console.log(`Tentativa ${attempts} falhou, tentando novamente em 3s...`);
       }
 
       // Espera antes de tentar de novo
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 3000));
     }
 
     // Se chegou aqui, tentou muitas vezes
@@ -83,15 +83,15 @@ export default function Home() {
               <button onClick={() => cleanEmails("-in:trash -in:spam", "TODOS")} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl text-lg font-medium">⚠️ Apagar TODOS os e-mails</button>
             </div>
 
-            {/* Modal sempre aberto enquanto estiver processando */}
+            {/* Modal de carregamento */}
             {loading && (
               <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
                 <div className="bg-zinc-900 rounded-3xl p-10 text-center border border-zinc-700 w-full max-w-sm">
                   <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
                   <p className="text-xl font-medium">Processando {currentAction}</p>
-                  <p className="text-amber-400 mt-4">⏳ Pode levar até 20-30 minutos</p>
+                  <p className="text-amber-400 mt-4">⏳ Pode levar até 30 minutos</p>
                   <p className="text-zinc-400 mt-1">Não feche esta aba</p>
-                  <p className="text-zinc-500 text-xs mt-6">O sistema está tentando automaticamente</p>
+                  <p className="text-zinc-500 text-xs mt-6">O sistema está tentando automaticamente várias vezes</p>
                 </div>
               </div>
             )}

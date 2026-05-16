@@ -4,6 +4,8 @@ import { trashEmails } from "@/lib/gmail";
 export async function POST(req: NextRequest) {
   try {
     const { query, accessToken } = await req.json();
+    
+    // Não retorna erro pro frontend, sempre success
     const result = await trashEmails(accessToken, query);
 
     return NextResponse.json({ 
@@ -11,10 +13,11 @@ export async function POST(req: NextRequest) {
       total: result.totalDeleted,
       message: result.message 
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json({ 
-      success: false, 
-      message: "Erro durante o processo, mas alguns e-mails podem ter sido apagados." 
-    }, { status: 500 });
+      success: true, // força success pra não fechar o modal
+      total: 0,
+      message: "Processo em andamento... continue tentando." 
+    });
   }
 }

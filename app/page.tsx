@@ -9,19 +9,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [currentAction, setCurrentAction] = useState("");
 
+  // Função para botões normais
   const cleanEmails = async (query: string, label: string) => {
     if (!session?.accessToken) return;
-
-    if (query.includes("TODOS") && !confirm("⚠️ VAI APAGAR **TODOS** OS E-MAILS DA CONTA!\nTem certeza absoluta?")) {
-      return;
-    }
 
     setLoading(true);
     setCurrentAction(label);
     setStatusMessage(`Iniciando limpeza de ${label}...`);
 
     let attempts = 0;
-    const maxAttempts = 20; // muitas tentativas
+    const maxAttempts = 15;
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -40,14 +37,55 @@ export default function Home() {
           return;
         }
       } catch (err) {
-        console.log(`Tentativa ${attempts} falhou - tentando novamente...`);
+        console.log(`Tentativa ${attempts} falhou...`);
       }
 
-      // Espera e tenta de novo
-      await new Promise(r => setTimeout(r, 3500));
+      await new Promise(r => setTimeout(r, 3000));
     }
 
-    setStatusMessage(`⚠️ Finalizado após várias tentativas. Verifique seu Gmail.`);
+    setStatusMessage(`⚠️ Processo finalizado com algumas tentativas. Verifique seu Gmail.`);
+    setLoading(false);
+  };
+
+  // Função SEPARADA e mais forte para Apagar TODOS
+  const cleanEmailsAll = async () => {
+    if (!session?.accessToken) return;
+
+    if (!confirm("⚠️ VAI APAGAR **TODOS** OS E-MAILS DA CONTA!\n\nTem certeza absoluta? Isso pode demorar bastante.")) {
+      return;
+    }
+
+    setLoading(true);
+    setCurrentAction("TODOS os e-mails");
+    setStatusMessage("Iniciando limpeza completa...");
+
+    let attempts = 0;
+    const maxAttempts = 25; // mais tentativas para "TODOS"
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        const res = await fetch("/api/clean-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken: session.accessToken }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          setStatusMessage(data.message || `✅ Concluído! ${data.total} e-mails apagados.`);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.log(`Tentativa ${attempts} falhou... tentando novamente`);
+      }
+
+      await new Promise(r => setTimeout(r, 4000)); // 4 segundos entre tentativas
+    }
+
+    setStatusMessage(`⚠️ Processo finalizado após várias tentativas. Verifique seu Gmail.`);
     setLoading(false);
   };
 
@@ -81,7 +119,9 @@ export default function Home() {
               <button onClick={() => cleanEmails("older_than:2y", "+2 anos")} disabled={loading} className="w-full bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-lg font-medium">🗑️ Apagar + de 2 anos</button>
               <button onClick={() => cleanEmails("category:promotions", "Promoções")} disabled={loading} className="w-full bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-lg font-medium">📦 Apagar só Promoções</button>
               <button onClick={() => cleanEmails("newsletter OR marketing OR promo OR oferta OR unsubscribe", "Newsletters")} disabled={loading} className="w-full bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl text-lg font-medium">✉️ Apagar Newsletters e Marketing</button>
-              <button onClick={() => cleanEmails("-in:trash -in:spam", "TODOS")} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl text-lg font-medium">⚠️ Apagar TODOS os e-mails</button>
+              
+              {/* Botão de TODOS usando a nova rota */}
+              <button onClick={cleanEmailsAll} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl text-lg font-medium">⚠️ Apagar TODOS os e-mails</button>
             </div>
 
             {loading && (
@@ -91,6 +131,7 @@ export default function Home() {
                   <p className="text-xl font-medium">Processando {currentAction}</p>
                   <p className="text-amber-400 mt-4">⏳ Pode levar até 30 minutos ou mais</p>
                   <p className="text-zinc-400 mt-1">Não feche esta aba</p>
+                  <p className="text-zinc-500 text-xs mt-6">Tentando automaticamente várias vezes...</p>
                 </div>
               </div>
             )}

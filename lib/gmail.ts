@@ -16,21 +16,23 @@ export async function trashEmails(accessToken: string, query: string): Promise<n
       userId: "me",
       q: query,
       pageToken: nextPageToken,
-      maxResults: 50,        // reduzimos pra ficar mais estável
+      maxResults: 100,
     });
 
     const messages = res.data?.messages || [];
     if (messages.length === 0) break;
 
-    // Apaga devagar (importante!)
-    for (const msg of messages) {
-      await gmail.users.messages.trash({ userId: "me", id: msg.id! });
-      totalDeleted++;
-      await new Promise((r) => setTimeout(r, 400)); // delay maior
-    }
+    // Apaga mais rápido (mas ainda seguro)
+    await Promise.all(
+      messages.map((msg: any) =>
+        gmail.users.messages.trash({ userId: "me", id: msg.id! })
+      )
+    );
 
+    totalDeleted += messages.length;
     nextPageToken = res.data?.nextPageToken || undefined;
 
+    await new Promise((r) => setTimeout(r, 150)); // delay reduzido
   } while (nextPageToken);
 
   return totalDeleted;

@@ -3,8 +3,4 @@
   publish = ".next"
 
 [functions]
-  node_bundler = "esbuild"
-
-[[functions]]
-  included_files = ["api/clean/**"]
   timeout = 300

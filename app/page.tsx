@@ -12,7 +12,7 @@ export default function Home() {
   const cleanEmails = async (query: string, label: string) => {
     if (!session?.accessToken) return;
 
-    if (query.includes("TODOS") && !confirm("⚠️ VAI APAGAR **TODOS** OS E-MAILS!\nTem certeza absoluta? Isso pode demorar MUITO.")) {
+    if (query.includes("TODOS") && !confirm("⚠️ VAI APAGAR **TODOS** OS E-MAILS DA CONTA!\nTem certeza absoluta?")) {
       return;
     }
 
@@ -21,7 +21,7 @@ export default function Home() {
     setStatusMessage(`Iniciando limpeza de ${label}...`);
 
     let attempts = 0;
-    const maxAttempts = 20; // mais tentativas pra TODOS
+    const maxAttempts = 20; // muitas tentativas
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -40,13 +40,14 @@ export default function Home() {
           return;
         }
       } catch (err) {
-        console.log(`Tentativa ${attempts} falhou... tentando de novo`);
+        console.log(`Tentativa ${attempts} falhou - tentando novamente...`);
       }
 
-      await new Promise(r => setTimeout(r, 4000)); // 4 segundos entre tentativas
+      // Espera e tenta de novo
+      await new Promise(r => setTimeout(r, 3500));
     }
 
-    setStatusMessage(`⚠️ Processo finalizado após várias tentativas. Verifique seu Gmail.`);
+    setStatusMessage(`⚠️ Finalizado após várias tentativas. Verifique seu Gmail.`);
     setLoading(false);
   };
 
@@ -90,7 +91,7 @@ export default function Home() {
                   <p className="text-xl font-medium">Processando {currentAction}</p>
                   <p className="text-amber-400 mt-4">⏳ Pode levar até 30 minutos ou mais</p>
                   <p className="text-zinc-400 mt-1">Não feche esta aba</p>
-                  <p className="text-zinc-500 text-xs mt-6">Tentando várias vezes automaticamente</p>
+                  <p className="text-zinc-500 text-xs mt-6">Tentando automaticamente várias vezes...</p>
                 </div>
               </div>
             )}

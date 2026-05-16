@@ -1,0 +1,6 @@
+[functions]
+  node_bundler = "esbuild"
+
+[[functions]]
+  pattern = "api/clean"
+  timeout = 300   # 5 minutos (pode aumentar até 900 se precisar)

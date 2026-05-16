@@ -100,7 +100,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <div className="text-6xl mb-3 mx-auto">🧹</div>
           <h1 className="text-3xl font-bold">Limpa Gmail</h1>
-          <p className="text-zinc-400">Feito pro WALA • Rápido e Seguro</p>
+          <p className="text-zinc-400">FAZE TESTE • Rápido e Seguro</p>
         </div>
 
         {!session ? (
@@ -131,7 +131,6 @@ export default function Home() {
                   <p className="text-xl font-medium">Processando {currentAction}</p>
                   <p className="text-amber-400 mt-4">⏳ Pode levar até 30 minutos ou mais</p>
                   <p className="text-zinc-400 mt-1">Não feche esta aba</p>
-                  <p className="text-zinc-500 text-xs mt-6">Tentando automaticamente várias vezes...</p>
                 </div>
               </div>
             )}

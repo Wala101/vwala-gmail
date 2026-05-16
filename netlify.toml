@@ -1,6 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
 [functions]
   node_bundler = "esbuild"
-  timeout = 300   # 5 minutos
+  timeout = 300   # 5 minutos de timeout
 
 [[functions]]
   pattern = "api/clean"

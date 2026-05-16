@@ -4,18 +4,33 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function trashEmails(accessToken: string, query: string): Promise<number> {
+export async function trashEmails(
+  accessToken: string,
+  query: string,
+  options?: { maxRunTimeMs?: number; batchSize?: number; batchDelayMs?: number; fallbackDelayMs?: number }
+): Promise<{ totalDeleted: number; totalFailed: number; errors: string[] }> {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: accessToken });
   const gmail = google.gmail({ version: "v1", auth });
 
-  let total = 0;
+  let deleted = 0;
+  let failed = 0;
   let pageToken: string | undefined = undefined;
-  const BATCH_SIZE = 50; // ajustar se necessário
-  const BATCH_DELAY_MS = 600; // delay entre lotes para evitar bloqueio
-  const FALLBACK_DELAY_MS = 200; // delay entre exclusões individuais no fallback
+  const BATCH_SIZE = options?.batchSize ?? 50; // ajustar se necessário
+  const BATCH_DELAY_MS = options?.batchDelayMs ?? 600; // delay entre lotes para evitar bloqueio
+  const FALLBACK_DELAY_MS = options?.fallbackDelayMs ?? 200; // delay entre exclusões individuais no fallback
+  const errors: string[] = [];
 
-  do {
+  const start = Date.now();
+  const maxRun = options?.maxRunTimeMs ?? 0; // 0 = sem limite
+
+  try {
+    do {
+      // interrompe se tempo excedido (quando >0)
+      if (maxRun > 0 && Date.now() - start > maxRun) {
+        console.warn(`Limite de tempo de ${maxRun}ms atingido, retornando parcial (${deleted})`);
+        break;
+      }
     const res: any = await gmail.users.messages.list({
       userId: "me",
       q: query + " -in:trash -in:spam",
@@ -37,26 +52,35 @@ export async function trashEmails(accessToken: string, query: string): Promise<n
           userId: "me",
           requestBody: { ids: ids, addLabelIds: ["TRASH"] }
         });
-        total += ids.length;
+        deleted += ids.length;
         // pequeno delay entre lotes
         await sleep(BATCH_DELAY_MS);
-      } catch (e) {
-        console.error("Erro no batch, tentando individualmente...");
+      } catch (e: any) {
+        console.error("Erro no batch, tentando individualmente...", e?.message || e);
+        errors.push(`batchModify failed for ids[0]=${ids[0]}: ${e?.message || String(e)}`);
         // Fallback: apaga um por um
         for (const id of ids) {
           try {
             await gmail.users.messages.trash({ userId: "me", id });
-            total++;
+            deleted++;
             await sleep(FALLBACK_DELAY_MS);
-          } catch {}
+          } catch (ee: any) {
+            // se falhar individualmente, registre e continue
+            failed++;
+            errors.push(`failed to trash id=${id}: ${ee?.message || String(ee)}`);
+          }
         }
       }
     }
 
-    pageToken = res.data.nextPageToken;
-    await sleep(800); // delay seguro entre páginas
+      pageToken = res.data.nextPageToken;
+      await sleep(800); // delay seguro entre páginas
 
-  } while (pageToken);
+    } while (pageToken);
+  } catch (err: any) {
+    console.error('Erro durante limpeza (retornando total parcial):', err?.message || err);
+    errors.push(`fatal: ${err?.message || String(err)}`);
+  }
 
-  return total;
+  return { totalDeleted: deleted, totalFailed: failed, errors };
 }

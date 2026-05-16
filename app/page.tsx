@@ -91,7 +91,6 @@ export default function Home() {
                   <p className="text-xl font-medium">Processando {currentAction}</p>
                   <p className="text-amber-400 mt-4">⏳ Pode levar até 30 minutos ou mais</p>
                   <p className="text-zinc-400 mt-1">Não feche esta aba</p>
-                  <p className="text-zinc-500 text-xs mt-6">Tentando automaticamente várias vezes...</p>
                 </div>
               </div>
             )}

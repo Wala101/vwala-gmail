@@ -3,12 +3,18 @@ import { trashEmails } from "@/lib/gmail";
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, accessToken, options } = await req.json();
-    const result = await trashEmails(accessToken, query, options);
+    const { query, accessToken } = await req.json();
+    const result = await trashEmails(accessToken, query);
 
-    return NextResponse.json({ success: true, result });
+    return NextResponse.json({ 
+      success: true, 
+      total: result.totalDeleted,
+      message: result.message 
+    });
   } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      message: "Erro durante o processo, mas alguns e-mails podem ter sido apagados." 
+    }, { status: 500 });
   }
 }
